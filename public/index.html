@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="favicon.ico.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#007bff" />
+    <meta
+      name="description"
+      content="AI-Based Solar Power Prediction and Optimization System - Predict solar intensity, duration, and power output for any region in India"
+    />
+    <meta name="keywords" content="solar, energy, prediction, AI, machine learning, renewable, India" />
+    <meta name="author" content="SolarAI Team" />
+    
+    <!-- Open Graph Tags -->
+    <meta property="og:title" content="SolarAI - Solar Power Prediction System" />
+    <meta property="og:description" content="AI-powered solar energy prediction and optimization for Indian regions" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="%PUBLIC_URL%/solar-og-image.jpg" />
+    
+    <!-- Twitter Card Tags -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="SolarAI Prediction System" />
+    <meta name="twitter:description" content="Predict solar power potential for any region in India" />
+    <meta name="twitter:image" content="%PUBLIC_URL%/solar-twitter-card.jpg" />
+    
+    <!-- Manifest and Icons -->
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    
+    <title>SolarAI - Solar Power Prediction System</title>
+    
+    <!-- Font Awesome Icons (Optional) -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    
+    <!-- Leaflet CSS for maps -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+      integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+      crossorigin=""
+    />
+  </head>
+  <body>
+    <noscript>
+      <div style="text-align: center; margin-top: 50px; font-family: Arial, sans-serif;">
+        <h1>SolarAI - Solar Power Prediction System</h1>
+        <p>You need to enable JavaScript to run this application.</p>
+        <p>Please enable JavaScript in your browser settings and refresh the page.</p>
+      </div>
+    </noscript>
+    
+    <!-- React Root Element -->
+    <div id="root"></div>
+    
+    <!-- Loading indicator shown before React loads -->
+    <div id="initial-loading" style="
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      font-family: Arial, sans-serif;
+      z-index: 9999;
+      transition: opacity 0.5s;
+    ">
+      <div style="text-align: center;">
+        <div style="
+          width: 50px;
+          height: 50px;
+          border: 5px solid rgba(255,255,255,0.3);
+          border-top: 5px solid white;
+          border-radius: 50%;
+          margin: 20px auto;
+          animation: spin 1s linear infinite;
+        "></div>
+        <h2>SolarAI</h2>
+        <p>Loading Solar Prediction System...</p>
+      </div>
+    </div>
+    
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      #root {
+        min-height: 100vh;
+      }
+    </style>
+    
+    <script>
+      // Hide loading indicator when React is ready
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loader = document.getElementById('initial-loading');
+          if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(function() {
+              loader.style.display = 'none';
+            }, 500);
+          }
+        }, 1000);
+      });
+    </script>
+  </body>
+</html>
