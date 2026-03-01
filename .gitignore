@@ -1,0 +1,63 @@
+# Python bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python/
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Model files (too large for git)
+models/
+*.pkl
+*.joblib
+*.h5
+*.keras
+*.pt
+*.pth
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs and databases
+*.log
+*.db
+*.sqlite
+instance/
+
+# Environment variables
+.env
+.flaskenv
+
+# Virtual environment
+venv/
+env/
+ENV/
+myenv/
+virtualenv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Distribution
+wheelhouse/
+*.egg
+
+# System files
+Thumbs.db
+*.bak
