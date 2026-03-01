@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Edit .gitignore to add node_modules
 @"
 # Node dependencies - DON'T COMMIT!
@@ -11,21 +12,45 @@ __pycache__/
 *.so
 .Python
 venv/
+=======
+# Python bytecode and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.python/
+venv/
+env/
+>>>>>>> 3f501ea2dc6623696ce5aaa3a19bbadfe00192ef
 ENV/
 *.egg-info/
 dist/
 build/
 
+<<<<<<< HEAD
 # Environment files
 .env
 .env.local
 .env.production
 
 # IDE
+=======
+# Model files (too large for git)
+models/
+*.pkl
+*.joblib
+*.h5
+*.keras
+*.pt
+*.pth
+
+# IDE files
+>>>>>>> 3f501ea2dc6623696ce5aaa3a19bbadfe00192ef
 .vscode/
 .idea/
 *.swp
 *.swo
+<<<<<<< HEAD
 
 # OS
 .DS_Store
@@ -48,3 +73,41 @@ git rm -r --cached node_modules
 git add .
 git commit -m "Add backend and ML server (excluding node_modules)"
 git push origin main
+=======
+*~
+.DS_Store
+
+# Logs and databases
+*.log
+*.db
+*.sqlite
+instance/
+
+# Environment variables
+.env
+.flaskenv
+
+# Virtual environment
+venv/
+env/
+ENV/
+myenv/
+virtualenv/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*.ipynb
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Distribution
+wheelhouse/
+*.egg
+
+# System files
+Thumbs.db
+*.bak
+>>>>>>> 3f501ea2dc6623696ce5aaa3a19bbadfe00192ef
