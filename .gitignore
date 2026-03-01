@@ -1,0 +1,50 @@
+# Edit .gitignore to add node_modules
+@"
+# Node dependencies - DON'T COMMIT!
+backend/node_modules/
+frontend/node_modules/
+node_modules/
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# ML Models (optional)
+ml-server/models/*.pkl
+!ml-server/models/.gitkeep
+"@ | Out-File -FilePath .gitignore -Encoding utf8
+
+# Remove node_modules from git tracking
+git rm -r --cached backend/node_modules
+git rm -r --cached node_modules
+
+# Now add everything properly
+git add .
+git commit -m "Add backend and ML server (excluding node_modules)"
+git push origin main
