@@ -15,10 +15,22 @@ const app = express();
 
 // Security middleware
 app.use(helmet());
+
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    'http://192.168.137.242:3000',  // your other machine
+    /^http:\/\/192\.168\.\d+\.\d+/ // or allow entire local subnet
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key'],
+  credentials: true,
   optionsSuccessStatus: 200
 }));
+
+// Explicitly handle OPTIONS preflight
+app.options('*', cors());
 
 // Rate limiting
 const limiter = rateLimit({
@@ -44,6 +56,7 @@ app.use('/api/predict', predictionRoutes);
 app.use('/api/regions', regionRoutes);
 app.use('/api/weather', weatherRoutes);
 app.use('/api/calculator',calculatorRoutes);
+app.use('/api/schemes', require('./routes/schemes'));
 
 // Health check endpoint
 app.get('/health', (req, res) => {

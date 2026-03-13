@@ -97,13 +97,13 @@ def generate_realistic_training_data(n_samples=20000):
     
     # Calculate final solar intensity
     df['solar_intensity'] = clear_sky_radiation * seasonal_factor * cloud_factor * \
-                            humidity_factor * coastal_factor * 4.5  # Scaling factor
+                            humidity_factor * coastal_factor * 3.5  # Scaling factor
     
     # Add random noise for realism
     df['solar_intensity'] += np.random.normal(0, 0.3, n_samples)
     
     # Ensure realistic bounds
-    df['solar_intensity'] = df['solar_intensity'].clip(2, 8.5)
+    df['solar_intensity'] = df['solar_intensity'].clip(2, 7.5)
     
     # Calculate sunshine duration (hours)
     df['sunshine_hours'] = 8 + 4 * np.sin(2 * np.pi * (df['day_of_year'] - 80) / 365) - \
