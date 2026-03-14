@@ -13,47 +13,37 @@ warnings.filterwarnings('ignore')
 os.makedirs('models', exist_ok=True)
 
 def generate_realistic_training_data(n_samples=20000):
-    """
-    Generate synthetic but realistic solar radiation data for India
-    Based on actual solar radiation patterns in different regions
-    """
     np.random.seed(42)
     
-    # Indian geographical boundaries
     latitudes = np.random.uniform(8, 37, n_samples)
     longitudes = np.random.uniform(68, 97, n_samples)
     
-    # Seasonal parameters
     months = np.random.randint(1, 13, n_samples)
     days_in_month = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
     
-    # Calculate day of year from month
     day_of_year = np.zeros(n_samples)
     for i, month in enumerate(months):
         day_of_year[i] = np.random.randint(1, days_in_month[month-1] + 1)
-        # Add cumulative days from previous months
         for m in range(month-1):
             day_of_year[i] += days_in_month[m]
     
-    # Environmental parameters with realistic ranges
     temperature = 15 + 25 * np.sin(np.radians((day_of_year - 80) * 0.986)) + \
-                 np.random.normal(0, 3, n_samples)  # Seasonal temperature variation
+                 np.random.normal(0, 3, n_samples)
     
-    humidity = 40 + 30 * np.sin(np.radians((day_of_year - 150) * 0.986)) + \
-               np.random.normal(0, 10, n_samples)  # Monsoon influence
-    humidity = np.clip(humidity, 20, 95)
+    humidity = 30 + 50 * np.sin(np.radians((day_of_year - 150) * 0.986)) + \
+               np.random.normal(0, 15, n_samples)
+    humidity = np.clip(humidity, 10, 98)
     
-    cloud_cover = 20 + 30 * np.sin(np.radians((day_of_year - 150) * 0.986)) + \
-                  np.random.normal(0, 15, n_samples)  # Cloud cover peaks in monsoon
+    cloud_cover = 20 + 50 * np.sin(np.radians((day_of_year - 150) * 0.986)) + \
+                  np.random.normal(0, 20, n_samples)
     cloud_cover = np.clip(cloud_cover, 0, 100)
     
-    altitude = np.random.uniform(0, 3500, n_samples)  # meters
-    distance_from_coast = np.random.uniform(0, 1200, n_samples)  # km
+    altitude = np.random.uniform(0, 3500, n_samples)
+    distance_from_coast = np.random.uniform(0, 1200, n_samples)
     aerosol_depth = 0.3 + 0.5 * np.exp(-distance_from_coast/500) + \
-                    np.random.normal(0, 0.1, n_samples)  # Higher inland
+                    np.random.normal(0, 0.1, n_samples)
     aerosol_depth = np.clip(aerosol_depth, 0.1, 1.2)
     
-    # Create DataFrame
     df = pd.DataFrame({
         'latitude': latitudes,
         'longitude': longitudes,
@@ -67,45 +57,30 @@ def generate_realistic_training_data(n_samples=20000):
         'aerosol_depth': aerosol_depth
     })
     
-    # Calculate solar intensity based on physical principles
-    # 1. Latitude effect (solar angle)
     latitude_rad = np.radians(df['latitude'])
     declination = 23.45 * np.sin(np.radians(360/365 * (284 + df['day_of_year'])))
     declination_rad = np.radians(declination)
     
-    # Solar elevation angle at solar noon (simplified)
     solar_angle = np.sin(latitude_rad) * np.sin(declination_rad) + \
                   np.cos(latitude_rad) * np.cos(declination_rad)
     solar_angle = np.clip(solar_angle, 0, 1)
     
-    # Base solar radiation at top of atmosphere (kWh/m²/day)
-    solar_constant = 1361 / 1000 * 24 / np.pi  # Convert to kWh/m²/day
+    solar_constant = 1361 / 1000 * 24 / np.pi
     base_radiation = solar_constant * solar_angle
     
-    # 2. Atmospheric attenuation
     clear_sky_radiation = base_radiation * np.exp(-0.1 * (df['altitude']/1000) - 0.2 * df['aerosol_depth'])
     
-    # 3. Cloud and humidity effects
-    cloud_factor = 1 - (df['cloud_cover'] / 100) * 0.6
-    humidity_factor = 1 - (df['humidity'] / 100) * 0.2
-    
-    # 4. Seasonal variation
+    cloud_factor = 1 - (df['cloud_cover'] / 100) * 0.85
+    humidity_factor = 1 - (df['humidity'] / 100) * 0.35
     seasonal_factor = 0.8 + 0.4 * np.sin(2 * np.pi * (df['day_of_year'] - 80) / 365)
-    
-    # 5. Distance from coast effect (coastal areas have more haze)
     coastal_factor = 1 - 0.1 * np.exp(-df['distance_from_coast'] / 200)
     
-    # Calculate final solar intensity
     df['solar_intensity'] = clear_sky_radiation * seasonal_factor * cloud_factor * \
-                            humidity_factor * coastal_factor * 3.5  # Scaling factor
+                            humidity_factor * coastal_factor * 2.8
     
-    # Add random noise for realism
     df['solar_intensity'] += np.random.normal(0, 0.3, n_samples)
+    df['solar_intensity'] = df['solar_intensity'].clip(1.5, 7.0)
     
-    # Ensure realistic bounds
-    df['solar_intensity'] = df['solar_intensity'].clip(2, 7.5)
-    
-    # Calculate sunshine duration (hours)
     df['sunshine_hours'] = 8 + 4 * np.sin(2 * np.pi * (df['day_of_year'] - 80) / 365) - \
                            0.05 * df['cloud_cover'] + np.random.normal(0, 0.5, n_samples)
     df['sunshine_hours'] = df['sunshine_hours'].clip(4, 13)
@@ -149,17 +124,17 @@ def train_models():
     
     # Train Random Forest for intensity prediction
     print("\n🌲 Training Random Forest model for solar intensity...")
-    rf_model = RandomForestRegressor(
-        n_estimators=200,
-        max_depth=25,
-        min_samples_split=5,
-        min_samples_leaf=2,
-        max_features='sqrt',
-        random_state=42,
-        n_jobs=-1,
-        verbose=1
-    )
     
+    rf_model = RandomForestRegressor(
+    n_estimators=200,
+    max_depth=10,
+    min_samples_split=20,
+    min_samples_leaf=10,
+    max_features='sqrt',
+    random_state=42,
+    n_jobs=-1,
+    verbose=1
+    )
     rf_model.fit(X_train_scaled, y_intensity_train)
     
     # Evaluate

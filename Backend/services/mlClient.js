@@ -2,7 +2,7 @@ const axios = require('axios');
 
 class MLClient {
   constructor() {
-    this.baseURL = process.env.ML_SERVICE_URL || 'http://192.168.137.242:5001';
+    this.baseURL = process.env.ML_SERVICE_URL || 'http://localhost:5001';
     
     this.client = axios.create({
       baseURL: this.baseURL,

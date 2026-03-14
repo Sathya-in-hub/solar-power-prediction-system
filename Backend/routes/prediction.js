@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const fetch = require('node-fetch');
 const { body, validationResult } = require('express-validator');
 const Prediction = require('../models/Prediction');
 const Region = require('../models/Region');
@@ -54,12 +55,36 @@ router.post('/', validatePrediction, async (req, res) => {
     }
 
     // Get weather data (mock for now)
-    const weatherData = {
-      cloudCover: Math.floor(Math.random() * 40 + 20),
-      temperature: Math.floor(Math.random() * 15 + 20),
-      humidity: Math.floor(Math.random() * 30 + 50)
-    };
+    
+    // Get real weather data from NASA for this region
+const nasaResponse = await fetch(`http://${process.env.ML_SERVICE_URL?.replace('http://', '') || 'localhost:5001'}/solar/realtime`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    lat: regionData.latitude,
+    lon: regionData.longitude,
+    date: date
+  })
+});
 
+let weatherData;
+if (nasaResponse.ok) {
+  const nasaData = await nasaResponse.json();
+  weatherData = {
+    cloudCover: nasaData.solar.cloud_cover,
+    temperature: nasaData.solar.temperature,
+    humidity: nasaData.solar.humidity
+  };
+  console.log('🌍 Using real NASA weather data');
+} else {
+  // fallback if NASA fails
+  weatherData = {
+    cloudCover: Math.floor(Math.random() * 40 + 20),
+    temperature: Math.floor(Math.random() * 15 + 20),
+    humidity: Math.floor(Math.random() * 30 + 50)
+  };
+  console.log('⚠️ NASA failed, using mock weather');
+}
     // Call ML service
     console.log('🤖 Calling ML service...');
     const mlResponse = await mlClient.predict({

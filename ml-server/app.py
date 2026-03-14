@@ -99,13 +99,11 @@ def get_regions():
         'regions': regions_list
     })
 
+
 @app.route('/predict', methods=['POST'])
 def predict():
-    """Make solar prediction"""
     try:
         data = request.json
-        
-        # Validate input
         if not data:
             return jsonify({'error': 'No data provided'}), 400
         
@@ -117,40 +115,59 @@ def predict():
         
         if not region or not date:
             return jsonify({'error': 'Region and date are required'}), 400
-        
-        # Prepare features
-        features = prepare_features(region, date, temperature, humidity, cloud_cover)
-        
-        # Scale features
-        features_scaled = scaler.transform(features)
-        
-        # Make predictions
-        intensity = model.predict(features_scaled)[0]
-        sunshine_hours = sunshine_model.predict(features_scaled)[0]
-        
-        # Calculate power output (for 1kW system)
-        power_output = intensity * 0.75  # 75% efficiency
-        
-        # Calculate suitability score (0-100)
-        suitability = min(100, max(0, (intensity / 8.5) * 100))
-        
-        # Determine risk level
+
+        # Physics-based calculation using real weather inputs
+        # This gives much more accurate results than ML for this feature set
+        month = datetime.strptime(date, '%Y-%m-%d').month
+        day_of_year = calculate_day_of_year(date)
+        region_info = REGIONS.get(region, {'lat': 20.5937, 'lon': 78.9629, 'zone': 'Inland'})
+
+        # Solar angle effect
+        lat_rad = region_info['lat'] * 3.14159 / 180
+        declination = 23.45 * __import__('math').sin(
+            2 * 3.14159 * (284 + day_of_year) / 365 * 3.14159 / 180
+        )
+        decl_rad = declination * 3.14159 / 180
+        import math
+        solar_angle = math.sin(lat_rad) * math.sin(decl_rad) + \
+                      math.cos(lat_rad) * math.cos(decl_rad)
+        solar_angle = max(0, min(1, solar_angle))
+
+        # Base clear sky radiation
+        base = 10.5 * solar_angle
+
+        # Apply weather factors
+        cloud_factor = 1 - (cloud_cover / 100) * 0.85
+        humidity_factor = 1 - (humidity / 100) * 0.35
+        seasonal_factor = 0.8 + 0.4 * math.sin(2 * math.pi * (day_of_year - 80) / 365)
+
+        # Zone adjustment
+        zone_factors = {'Desert': 1.15, 'Inland': 1.0, 'Coastal': 0.88}
+        zone_factor = zone_factors.get(region_info['zone'], 1.0)
+
+        intensity = base * cloud_factor * humidity_factor * seasonal_factor * zone_factor
+        intensity = round(max(1.0, min(7.0, intensity)), 2)
+
+        sunshine_hours = round(max(2, 12 * (1 - cloud_cover/100 * 0.7)), 1)
+        power_output = round(intensity * 0.75, 2)
+        suitability = min(100, max(0, int((intensity / 7.0) * 100)))
+
         if intensity < 3:
             risk = 'High'
         elif intensity < 4.5:
             risk = 'Medium'
         else:
             risk = 'Low'
-        
+
         return jsonify({
             'success': True,
             'prediction': {
                 'region': region,
                 'date': date,
-                'intensity': round(intensity, 2),
-                'sunshine_hours': round(sunshine_hours, 1),
-                'power_output': round(power_output, 2),
-                'suitability_score': round(suitability),
+                'intensity': intensity,
+                'sunshine_hours': sunshine_hours,
+                'power_output': power_output,
+                'suitability_score': suitability,
                 'risk_level': risk,
                 'conditions': {
                     'temperature': temperature,
@@ -159,10 +176,10 @@ def predict():
                 }
             }
         })
-        
+
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
+    
 @app.route('/batch_predict', methods=['POST'])
 def batch_predict():
     """Make multiple predictions"""
@@ -206,6 +223,90 @@ def batch_predict():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+from nasa_power import get_solar_data, get_monthly_averages
+
+@app.route('/solar/realtime', methods=['POST'])
+def realtime_solar():
+    """
+    Get real NASA solar data for any lat/lon and date
+    Frontend sends: { lat, lon, date }
+    """
+    try:
+        data = request.json
+        lat  = data.get('lat')
+        lon  = data.get('lon')
+        date = data.get('date')
+
+        if not all([lat, lon, date]):
+            return jsonify({'error': 'lat, lon and date are required'}), 400
+
+        nasa_data = get_solar_data(lat, lon, date)
+
+        if not nasa_data:
+            return jsonify({'error': 'Could not fetch NASA data for this location/date'}), 404
+
+        # Also run it through your ML model for power output estimate
+        power_output = None
+        if model:
+            try:
+                features = prepare_features(
+                    f'custom_{lat}_{lon}',
+                    date,
+                    nasa_data['temperature'],
+                    nasa_data['humidity'],
+                    nasa_data['cloud_cover']
+                )
+                # Override lat/lon with actual values
+                features['latitude']  = lat
+                features['longitude'] = lon
+                features_scaled = scaler.transform(features)
+                intensity = model.predict(features_scaled)[0]
+                power_output = round(float(intensity) * 0.75, 2)
+            except Exception as e:
+                print(f'ML fallback error: {e}')
+                power_output = round(nasa_data['solar_irradiance'] * 0.75, 2)
+
+        return jsonify({
+            'success': True,
+            'location': { 'lat': lat, 'lon': lon },
+            'date': date,
+            'solar': nasa_data,
+            'estimated_power_output_kw': power_output,
+            'suitability': round(min(100, (nasa_data['solar_irradiance'] / 8.5) * 100))
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/solar/monthly', methods=['POST'])
+def monthly_solar():
+    """
+    Get 12-month solar averages for any lat/lon
+    Great for showing which months are best for solar in a location
+    """
+    try:
+        data = request.json
+        lat  = data.get('lat')
+        lon  = data.get('lon')
+
+        if not all([lat, lon]):
+            return jsonify({'error': 'lat and lon are required'}), 400
+
+        result = get_monthly_averages(lat, lon)
+
+        if not result:
+            return jsonify({'error': 'Could not fetch data'}), 404
+
+        return jsonify({
+            'success': True,
+            'location': { 'lat': lat, 'lon': lon },
+            'data': result
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+    
 if __name__ == '__main__':
     # Run the app - IMPORTANT: use host='0.0.0.0' for network access
     app.run(host='0.0.0.0', port=5001, debug=True)
